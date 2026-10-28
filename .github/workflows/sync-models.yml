@@ -5,9 +5,9 @@ on:
     - cron: "17 * * * *"
   workflow_dispatch:
 
-# sync runs repository code and provider API keys with a read-only token. It uploads each provider's catalog patch as
-# data. publish runs only .github/sync-models/ from this commit with a models.dev automation app token from the
-# automation environment: it applies each patch, allowing only catalog TOML, opens or updates the provider's pull
+# sync runs repository code and provider API keys with the built-in token only. It uploads each provider's catalog
+# patch as data. publish runs only .github/sync-models/ from this commit with a models.dev automation app token from
+# the automation environment: it applies each patch, allowing only catalog TOML, opens or updates the provider's pull
 # request and auto-merges safe syncs. The app's pull requests run their checks and its merges deploy as usual.
 permissions:
   contents: read
@@ -47,6 +47,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.providers.outputs.matrix) }}
+    # bun models:sync opens an issue for each missing model and dispatches the issue fixer (repository_dispatch needs
+    # contents: write). The built-in token can't change dev or workflows; catalog changes still go through publish.
+    permissions:
+      contents: write
+      issues: write
 
     steps:
       - name: Checkout code
