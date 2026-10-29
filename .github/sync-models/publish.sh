@@ -25,13 +25,32 @@ labels=(automation model-sync "provider:$provider")
 "${git[@]}" clean -q -fdx
 "${git[@]}" apply --index --binary "$dir/changes.patch" || { echo "::error::$provider patch no longer applies to dev" >&2; exit 1; }
 
+# A symlink (the Vercel sync writes some) must be a relative link to another TOML file inside providers/.
+check_link() {
+  local path=$1 sha=$2 target part
+  local -a parts resolved=()
+  target=$(git cat-file -p "$sha")
+  [ "$(git cat-file -s "$sha")" = "$(LC_ALL=C; echo "${#target}")" ] || return 1
+  [[ $target =~ ^[^/\\[:cntrl:]][^\\[:cntrl:]]*\.toml$ ]] || return 1
+  IFS=/ read -ra parts <<< "${path%/*}/$target"
+  for part in "${parts[@]}"; do
+    case $part in
+      '' | .) ;;
+      ..) [ "${#resolved[@]}" -gt 1 ] || return 1; unset "resolved[${#resolved[@]}-1]" ;;
+      *) resolved+=("$part") ;;
+    esac
+  done
+  [ "${#resolved[@]}" -gt 1 ] && [ "${resolved[0]}" = providers ]
+}
+
 # Without rename detection, a rename shows up as a deletion of its source plus an addition, so both are checked.
-changed=$(git diff --cached --raw --no-renames)
+changed=$(git diff --cached --raw --no-renames --no-abbrev)
 [ -n "$changed" ] || { echo "::error::$provider patch is empty" >&2; exit 1; }
 while IFS=$'\t' read -r meta path; do
-  read -r old_mode new_mode _ <<< "${meta#:}"
-  [[ $old_mode =~ ^(000000|100644)$ && $new_mode =~ ^(000000|100644)$ ]] || { echo "::error::$provider sync may change only regular files: $path" >&2; exit 1; }
+  read -r old_mode new_mode _ new_sha _ <<< "${meta#:}"
+  [[ $old_mode =~ ^(000000|100644|120000)$ && $new_mode =~ ^(000000|100644|120000)$ ]] || { echo "::error::$provider sync may change only regular files and symlinks: $path" >&2; exit 1; }
   [[ $path =~ ^(models|providers)/.+\.toml$ ]] || { echo "::error::$provider sync may change only catalog TOML: $path" >&2; exit 1; }
+  [ "$new_mode" != 120000 ] || check_link "$path" "$new_sha" || { echo "::error::$provider sync symlink must point to a TOML file inside providers/: $path" >&2; exit 1; }
 done <<< "$changed"
 
 "${git[@]}" commit -q --no-verify -m "$title"
