@@ -46,12 +46,29 @@ check_link() {
 # Without rename detection, a rename shows up as a deletion of its source plus an addition, so both are checked.
 changed=$(git diff --cached --raw --no-renames --no-abbrev)
 [ -n "$changed" ] || { echo "::error::$provider patch is empty" >&2; exit 1; }
+created=0
+deleted=0
+reasons=()
 while IFS=$'\t' read -r meta path; do
   read -r old_mode new_mode _ new_sha _ <<< "${meta#:}"
   [[ $old_mode =~ ^(000000|100644|120000)$ && $new_mode =~ ^(000000|100644|120000)$ ]] || { echo "::error::$provider sync may change only regular files and symlinks: $path" >&2; exit 1; }
   [[ $path =~ ^(models|providers)/.+\.toml$ ]] || { echo "::error::$provider sync may change only catalog TOML: $path" >&2; exit 1; }
   [ "$new_mode" != 120000 ] || check_link "$path" "$new_sha" || { echo "::error::$provider sync symlink must point to a TOML file inside providers/: $path" >&2; exit 1; }
+  [[ $path == "providers/$provider/models/"* ]] || reasons+=("changes $path outside providers/$provider/models/")
+  [ "$old_mode" != 000000 ] || created=$((created + 1))
+  [ "$new_mode" != 000000 ] || deleted=$((deleted + 1))
 done <<< "$changed"
+
+# The sync job runs repository code and dependencies, so its safe flag is only trusted alongside these checks, which
+# mirror the limits in packages/core/src/sync/auto-merge.ts.
+[ "$created" -le 10 ] || reasons+=("$created models created (limit 10)")
+[ "$deleted" -le 10 ] || reasons+=("$deleted models deleted (limit 10)")
+[ $((created + deleted)) -le 15 ] || reasons+=("$((created + deleted)) models created or deleted (limit 15)")
+[ "$provider" != cloudflare-ai-gateway ] || [ "$deleted" -eq 0 ] || reasons+=("Cloudflare AI Gateway model deletions require manual review")
+if [ "$safe" = true ] && [ ${#reasons[@]} -gt 0 ]; then
+  printf '::warning::%s sync not auto-merged: %s\n' "$provider" "${reasons[@]}"
+  safe=false
+fi
 
 "${git[@]}" commit -q --no-verify -m "$title"
 
