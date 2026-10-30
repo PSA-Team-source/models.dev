@@ -1,0 +1,29 @@
+# Model id, prices and limits: UberLLM's catalog, GET https://api.uberllm.dev/v1/models (2026-10-30).
+# Prices are the listed price: it follows the market and is refreshed every 5 minutes; a call is billed what the serving provider charged.
+# limit: the host's cap from the same catalog, where it is below the lab's.
+# Reasoning: always on here; reasoning_effort changed the amount but not reliably (none still returned 76 reasoning tokens).
+# modalities: text only here; an image request was answered "I cannot see the image" (probe, other models read the same image).
+#   Probed 2026-10-30 on /v1/chat/completions.
+schema = 2
+base_model = "minimax/MiniMax-M3"
+
+[modalities]
+input = ["text"]
+output = ["text"]
+
+[capabilities]
+reasoning = { supported = true }
+
+[limit]
+context = 200_000
+output = 32_768
+
+[api.chat-completions]
+compatibility = { reasoning_field = "reasoning_content" }
+
+[cost.text.input]
+price = 0.186
+cache = { read = 0.0372 }
+
+[cost.text.output]
+price = 0.744

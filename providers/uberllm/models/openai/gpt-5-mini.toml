@@ -1,0 +1,16 @@
+# Model id, prices and limits: UberLLM's catalog, GET https://api.uberllm.dev/v1/models (2026-10-30).
+# Prices are the listed price: it follows the market and is refreshed every 5 minutes; a call is billed what the serving provider charged.
+# Reasoning: always on with no caller control here: every reasoning_effort value returned 64 reasoning tokens.
+#   Probed 2026-10-30 on /v1/chat/completions.
+schema = 2
+base_model = "openai/gpt-5-mini"
+
+[capabilities]
+reasoning = { supported = true }
+
+[cost.text.input]
+price = 0.07
+cache = { read = 0.007 }
+
+[cost.text.output]
+price = 0.56

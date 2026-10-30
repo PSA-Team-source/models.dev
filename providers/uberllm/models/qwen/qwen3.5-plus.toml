@@ -1,0 +1,18 @@
+# Model id, prices and limits: UberLLM's catalog, GET https://api.uberllm.dev/v1/models (2026-10-30).
+# Prices are the listed price: it follows the market and is refreshed every 5 minutes; a call is billed what the serving provider charged.
+# Reasoning: always on with no caller control here (453-813 reasoning tokens with no field, low, high, none and reasoning.enabled=false).
+#   Probed 2026-10-30 on /v1/chat/completions.
+schema = 2
+base_model = "alibaba/qwen3.5-plus"
+
+[capabilities]
+reasoning = { supported = true }
+
+[api.chat-completions]
+compatibility = { reasoning_field = "reasoning_content" }
+
+[cost.text.input]
+price = 0.234
+
+[cost.text.output]
+price = 1.404

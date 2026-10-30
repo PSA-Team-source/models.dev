@@ -1,0 +1,21 @@
+# Model id, prices and limits: UberLLM's catalog, GET https://api.uberllm.dev/v1/models (2026-10-30).
+# Prices are the listed price: it follows the market and is refreshed every 5 minutes; a call is billed what the serving provider charged.
+# limit: the host's cap from the same catalog, where it is below the lab's.
+# Reasoning: always on with no caller control here: reasoning_effort low|high|none|banana and reasoning.enabled=false
+#   all returned 10-21 reasoning tokens.
+#   Probed 2026-10-30 on /v1/chat/completions.
+schema = 2
+base_model = "openai/gpt-5.5"
+
+[capabilities]
+reasoning = { supported = true }
+
+[limit]
+context = 1_000_000
+
+[cost.text.input]
+price = 1.15
+cache = { read = 0.115 }
+
+[cost.text.output]
+price = 6.9
