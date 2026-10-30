@@ -14,7 +14,6 @@ compatibility = { reasoning_field = "reasoning_content" }
 
 [cost.text.input]
 price = 0.004893
-cache = { read = 0.004823 }
 
 [cost.text.output]
 price = 0.098

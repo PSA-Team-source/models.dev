@@ -9,7 +9,6 @@ context = 256_000
 
 [cost.text.input]
 price = 0.015
-cache = { read = 0.005 }
 
 [cost.text.output]
 price = 0.05
